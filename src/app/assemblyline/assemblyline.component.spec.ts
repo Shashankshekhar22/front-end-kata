@@ -7,27 +7,27 @@ import {
   tick
 } from '@angular/core/testing';
 import { Component, NO_ERRORS_SCHEMA } from '@angular/core';
+import { ConfigureFn, configureTests } from '../../../lib/testing/config.helper';
 import { AssemblyLineComponent } from './assemblyline.component';
 import { AssemblyLineModule } from './assemblyline.module';
-import { ConfigureFn, configureTests } from 'lib/testing/config.helper';
 
 /* This test suite will not be submitted with your solution.
    Feel free to modify it as you wish. */
 
 @Component({
-  selector: "test-wrapper-component",
+  selector: 'test-wrapper-component',
   template: `<assemblyline [stages]="[
     'Idea', 'Development', 'Testing', 'Deployment'
   ]"></assemblyline>`
 })
 
-class TestComponentWrapper {
+class TestComponentWrapperComponent {
   assemblyline = new AssemblyLineComponent();
 }
 
-describe("AssemblyLineComponent", () => {
+describe('AssemblyLineComponent', () => {
   let component: AssemblyLineComponent;
-  let fixture: ComponentFixture<TestComponentWrapper>;
+  let fixture: ComponentFixture<TestComponentWrapperComponent>;
 
   const addAll = items => {
     const addElem = fixture.debugElement.query(
@@ -36,15 +36,21 @@ describe("AssemblyLineComponent", () => {
     expect(addElem).not.toBeNull();
     items.forEach(e => {
       addElem.nativeElement.value = e;
-      addElem.nativeElement.dispatchEvent(new Event("input"));
-      addElem.triggerEventHandler("keydown.enter", {});
+      addElem.nativeElement.dispatchEvent(new Event('input'));
+      const eventObj = {
+        target: {
+          value: e
+        }
+      };
+      addElem.triggerEventHandler('keydown.enter', eventObj);
     });
+    fixture.detectChanges();
   };
 
   beforeEach(async(() => {
     const configure: ConfigureFn = testBed => {
       testBed.configureTestingModule({
-        declarations: [TestComponentWrapper],
+        declarations: [TestComponentWrapperComponent],
         imports: [AssemblyLineModule],
         providers: [{
           provide: ComponentFixtureAutoDetect,
@@ -54,7 +60,7 @@ describe("AssemblyLineComponent", () => {
     };
 
     configureTests(configure).then(testBed => {
-      fixture = testBed.createComponent(TestComponentWrapper);
+      fixture = testBed.createComponent(TestComponentWrapperComponent);
       component = fixture.debugElement.children[0].componentInstance;
       fixture.detectChanges();
     });
@@ -110,7 +116,12 @@ describe("AssemblyLineComponent", () => {
       describe('when enter key is pressed on "assembly-add-item"', () => {
         beforeEach(() => {
           expect(addElem).not.toBeNull();
-          addElem.triggerEventHandler("keydown.enter", {});
+          const eventObj = {
+            target: {
+              value: addElem.nativeElement.value
+            }
+          };
+          addElem.triggerEventHandler("keydown.enter", eventObj);
           fixture.detectChanges();
         });
 
@@ -127,7 +138,7 @@ describe("AssemblyLineComponent", () => {
           const children = stageElem.nativeElement.querySelectorAll('*[data-test="assembly-item"]');
           expect(children).not.toBeNull();
           expect(children.length).toEqual(1);
-          expect(children[0].innerHTML).toContain("goldenrod");
+          expect(children[0].innerText).toContain("goldenrod");
         });
       });
     });
@@ -159,41 +170,45 @@ describe("AssemblyLineComponent", () => {
       }));
 
       it("should initially list 4 items within Idea stage", () => {
+        expect(component.listItems['Idea'].length).toEqual(4);
         expect(getStage(0).length).toEqual(4);
       });
 
       it("should insert items in Idea stage in the correct order", () => {
         for (let i = 0; i < 4; i++) {
-          expect(getStage(0)[i].innerHTML).toEqual(startItems[3-i]);
+          expect(getStage(0)[i].innerText).toEqual(startItems[3-i]);
         }
       });
 
       describe("after first item in Idea stage is clicked", () => {
-        beforeEach(() => getStage(0)[0].click());
+        beforeEach(() => {
+          getStage(0)[0].firstChild.click();
+          expect(getStage(0).length).toEqual(3);
+        });
 
         it("should prepend first item to the Development stage", () => {
           expect(getStage(0).length).toEqual(3);
           expect(getStage(1).length).toEqual(1);
-          expect(getStage(0)[0].innerHTML).toEqual("magenta");
-          expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-          expect(getStage(0)[2].innerHTML).toEqual("indigo");
-          expect(getStage(1)[0].innerHTML).toEqual("fuschia");
+          expect(getStage(0)[0].innerText).toEqual("magenta");
+          expect(getStage(0)[1].innerText).toEqual("turquoise");
+          expect(getStage(0)[2].innerText).toEqual("indigo");
+          expect(getStage(1)[0].innerText).toEqual("fuschia");
         });
 
         describe("after the last item in the Idea stage is clicked", () => {
           beforeEach(() => {
             const stage = getStage(0);
             expect(stage.length).toEqual(3);
-            stage[2].click();
+            stage[2].firstChild.click();
           });
 
           it("should prepend last item to the Development stage", () => {
             expect(getStage(0).length).toEqual(2);
             expect(getStage(1).length).toEqual(2);
-            expect(getStage(0)[0].innerHTML).toEqual("magenta");
-            expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-            expect(getStage(1)[0].innerHTML).toEqual("indigo");
-            expect(getStage(1)[1].innerHTML).toEqual("fuschia");
+            expect(getStage(0)[0].innerText).toEqual("magenta");
+            expect(getStage(0)[1].innerText).toEqual("turquoise");
+            expect(getStage(1)[0].innerText).toEqual("indigo");
+            expect(getStage(1)[1].innerText).toEqual("fuschia");
           });
 
           describe("adding another item mid-stream", () => {
@@ -206,71 +221,71 @@ describe("AssemblyLineComponent", () => {
             it("should prepend new item to the Development stage", () => {
               expect(getStage(0).length).toEqual(3);
               expect(getStage(1).length).toEqual(2);
-              expect(getStage(0)[0].innerHTML).toEqual("maroon");
-              expect(getStage(0)[1].innerHTML).toEqual("magenta");
-              expect(getStage(0)[2].innerHTML).toEqual("turquoise");
-              expect(getStage(1)[0].innerHTML).toEqual("indigo");
-              expect(getStage(1)[1].innerHTML).toEqual("fuschia");
+              expect(getStage(0)[0].innerText).toEqual("maroon");
+              expect(getStage(0)[1].innerText).toEqual("magenta");
+              expect(getStage(0)[2].innerText).toEqual("turquoise");
+              expect(getStage(1)[0].innerText).toEqual("indigo");
+              expect(getStage(1)[1].innerText).toEqual("fuschia");
             });
 
             describe("moving middle item from Idea to Development", () => {
               beforeEach(() => {
                 const stage = getStage(0);
                 expect(stage.length).toEqual(3);
-                stage[1].click();
+                stage[1].firstChild.click();
               });
 
               it("should have length 2 in Idea and 3 in Development", () => {
                 expect(getStage(0).length).toEqual(2);
                 expect(getStage(1).length).toEqual(3);
-                expect(getStage(0)[0].innerHTML).toEqual("maroon");
-                expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-                expect(getStage(1)[0].innerHTML).toEqual("magenta");
-                expect(getStage(1)[1].innerHTML).toEqual("indigo");
-                expect(getStage(1)[2].innerHTML).toEqual("fuschia");
+                expect(getStage(0)[0].innerText).toEqual("maroon");
+                expect(getStage(0)[1].innerText).toEqual("turquoise");
+                expect(getStage(1)[0].innerText).toEqual("magenta");
+                expect(getStage(1)[1].innerText).toEqual("indigo");
+                expect(getStage(1)[2].innerText).toEqual("fuschia");
               });
 
               describe("moving middle item from Development to Idea", () => {
                 beforeEach(() => {
                   const stage = getStage(1);
                   expect(stage.length).toEqual(3);
-                  stage[1].dispatchEvent(new MouseEvent("contextmenu"));
+                  stage[1].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
                 });
 
                 it("should have three in Idea and two in Development", () => {
                   expect(getStage(0).length).toEqual(3);
                   expect(getStage(1).length).toEqual(2);
-                  expect(getStage(0)[0].innerHTML).toEqual("maroon");
-                  expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-                  expect(getStage(0)[2].innerHTML).toEqual("indigo");
-                  expect(getStage(1)[0].innerHTML).toEqual("magenta");
-                  expect(getStage(1)[1].innerHTML).toEqual("fuschia");
+                  expect(getStage(0)[0].innerText).toEqual("maroon");
+                  expect(getStage(0)[1].innerText).toEqual("turquoise");
+                  expect(getStage(0)[2].innerText).toEqual("indigo");
+                  expect(getStage(1)[0].innerText).toEqual("magenta");
+                  expect(getStage(1)[1].innerText).toEqual("fuschia");
                 });
 
                 describe("moving items from Development to Testing", () => {
                   beforeEach(() => {
                     const stage = getStage(1);
                     expect(stage.length).toEqual(2);
-                    stage[0].click();
-                    stage[1].click();
+                    stage[0].firstChild.click();
+                    stage[1].firstChild.click();
                   });
 
                   it("should leave Development empty and Testing with two", () => {
                     expect(getStage(0).length).toEqual(3);
                     expect(getStage(1).length).toEqual(0);
                     expect(getStage(2).length).toEqual(2);
-                    expect(getStage(0)[0].innerHTML).toEqual("maroon");
-                    expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-                    expect(getStage(0)[2].innerHTML).toEqual("indigo");
-                    expect(getStage(2)[0].innerHTML).toEqual("fuschia");
-                    expect(getStage(2)[1].innerHTML).toEqual("magenta");
+                    expect(getStage(0)[0].innerText).toEqual("maroon");
+                    expect(getStage(0)[1].innerText).toEqual("turquoise");
+                    expect(getStage(0)[2].innerText).toEqual("indigo");
+                    expect(getStage(2)[0].innerText).toEqual("fuschia");
+                    expect(getStage(2)[1].innerText).toEqual("magenta");
                   });
 
                   describe("moving an item from Testing to Production", () => {
                     beforeEach(() => {
                       const stage = getStage(2);
                       expect(stage.length).toEqual(2);
-                      stage[1].click();
+                      stage[1].firstChild.click();
                     });
 
                     it("should leave one item in both Testing and Production", () => {
@@ -278,18 +293,18 @@ describe("AssemblyLineComponent", () => {
                       expect(getStage(1).length).toEqual(0);
                       expect(getStage(2).length).toEqual(1);
                       expect(getStage(3).length).toEqual(1);
-                      expect(getStage(0)[0].innerHTML).toEqual("maroon");
-                      expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-                      expect(getStage(0)[2].innerHTML).toEqual("indigo");
-                      expect(getStage(2)[0].innerHTML).toEqual("fuschia");
-                      expect(getStage(3)[0].innerHTML).toEqual("magenta");
+                      expect(getStage(0)[0].innerText).toEqual("maroon");
+                      expect(getStage(0)[1].innerText).toEqual("turquoise");
+                      expect(getStage(0)[2].innerText).toEqual("indigo");
+                      expect(getStage(2)[0].innerText).toEqual("fuschia");
+                      expect(getStage(3)[0].innerText).toEqual("magenta");
                     });
 
                     describe("moving an item backwards from Testing to Development", () => {
                       beforeEach(() => {
                         const stage = getStage(2);
                         expect(stage.length).toEqual(1);
-                        stage[0].dispatchEvent(new MouseEvent("contextmenu"));
+                        stage[0].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
                       });
 
                       it("should leave one item in both Testing and Production", () => {
@@ -297,38 +312,38 @@ describe("AssemblyLineComponent", () => {
                         expect(getStage(1).length).toEqual(1);
                         expect(getStage(2).length).toEqual(0);
                         expect(getStage(3).length).toEqual(1);
-                        expect(getStage(0)[0].innerHTML).toEqual("maroon");
-                        expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-                        expect(getStage(0)[2].innerHTML).toEqual("indigo");
-                        expect(getStage(1)[0].innerHTML).toEqual("fuschia");
-                        expect(getStage(3)[0].innerHTML).toEqual("magenta");
+                        expect(getStage(0)[0].innerText).toEqual("maroon");
+                        expect(getStage(0)[1].innerText).toEqual("turquoise");
+                        expect(getStage(0)[2].innerText).toEqual("indigo");
+                        expect(getStage(1)[0].innerText).toEqual("fuschia");
+                        expect(getStage(3)[0].innerText).toEqual("magenta");
                       });
 
                       describe("clear the rest of the list out", () => {
                         beforeEach(() => {
                           let stage = getStage(0);
                           expect(stage.length).toEqual(3);
-                          stage[2].dispatchEvent(new MouseEvent("contextmenu"));
+                          stage[2].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
 
                           stage = getStage(1);
                           expect(stage.length).toEqual(1);
-                          stage[0].dispatchEvent(new MouseEvent("contextmenu"));
+                          stage[0].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
 
                           stage = getStage(0);
                           expect(stage.length).toEqual(3);
-                          stage[1].dispatchEvent(new MouseEvent("contextmenu"));
+                          stage[1].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
 
                           stage = getStage(3);
                           expect(stage.length).toEqual(1);
-                          stage[0].click();
+                          stage[0].firstChild.click();
 
                           stage = getStage(0);
                           expect(stage.length).toEqual(2);
-                          stage[1].dispatchEvent(new MouseEvent("contextmenu"));
+                          stage[1].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
 
                           stage = getStage(0);
                           expect(stage.length).toEqual(1);
-                          stage[0].dispatchEvent(new MouseEvent("contextmenu"));
+                          stage[0].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
                         });
 
                         it("should be empty", () => {
@@ -343,16 +358,16 @@ describe("AssemblyLineComponent", () => {
                       beforeEach(() => {
                         const stage = getStage(0);
                         expect(stage.length).toEqual(3);
-                        stage[1].dispatchEvent(new MouseEvent("contextmenu"));
+                        stage[1].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
                       });
 
                       it("should leave one item in Testing", () => {
                         expect(getStage(0).length).toEqual(2);
                         expect(getStage(1).length).toEqual(0);
                         expect(getStage(2).length).toEqual(1);
-                        expect(getStage(0)[0].innerHTML).toEqual("maroon");
-                        expect(getStage(0)[1].innerHTML).toEqual("indigo");
-                        expect(getStage(2)[0].innerHTML).toEqual("fuschia");
+                        expect(getStage(0)[0].innerText).toEqual("maroon");
+                        expect(getStage(0)[1].innerText).toEqual("indigo");
+                        expect(getStage(2)[0].innerText).toEqual("fuschia");
                       });
                     });
 
@@ -360,7 +375,7 @@ describe("AssemblyLineComponent", () => {
                       beforeEach(() => {
                         const stage = getStage(3);
                         expect(stage.length).toEqual(1);
-                        stage[0].click();
+                        stage[0].firstChild.click();
                       });
 
                       it("should clear Production", () => {
@@ -368,10 +383,10 @@ describe("AssemblyLineComponent", () => {
                         expect(getStage(1).length).toEqual(0);
                         expect(getStage(2).length).toEqual(1);
                         expect(getStage(3).length).toEqual(0);
-                        expect(getStage(0)[0].innerHTML).toEqual("maroon");
-                        expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-                        expect(getStage(0)[2].innerHTML).toEqual("indigo");
-                        expect(getStage(2)[0].innerHTML).toEqual("fuschia");
+                        expect(getStage(0)[0].innerText).toEqual("maroon");
+                        expect(getStage(0)[1].innerText).toEqual("turquoise");
+                        expect(getStage(0)[2].innerText).toEqual("indigo");
+                        expect(getStage(2)[0].innerText).toEqual("fuschia");
                       });
                     });
                   });
@@ -385,17 +400,17 @@ describe("AssemblyLineComponent", () => {
           beforeEach(() => {
             const stage = getStage(1);
             expect(stage.length).toEqual(1);
-            stage[0].dispatchEvent(new MouseEvent("contextmenu"));
+            stage[0].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
           });
 
           it("should have moved that item back to the Idea stage", () => {
             expect(getStage(0).length).toEqual(4);
             expect(getStage(1).length).toEqual(0);
             expect(getStage(2).length).toEqual(0);
-            expect(getStage(0)[0].innerHTML).toEqual("magenta");
-            expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-            expect(getStage(0)[2].innerHTML).toEqual("indigo");
-            expect(getStage(0)[3].innerHTML).toEqual("fuschia");
+            expect(getStage(0)[0].innerText).toEqual("magenta");
+            expect(getStage(0)[1].innerText).toEqual("turquoise");
+            expect(getStage(0)[2].innerText).toEqual("indigo");
+            expect(getStage(0)[3].innerText).toEqual("fuschia");
           });
         });
 
@@ -403,24 +418,24 @@ describe("AssemblyLineComponent", () => {
           beforeEach(() => {
             const stage = getStage(1);
             expect(stage.length).toEqual(1);
-            stage[0].click();
+            stage[0].firstChild.click();
           });
 
           it("should have moved that item to the Testing stage", () => {
             expect(getStage(0).length).toEqual(3);
             expect(getStage(1).length).toEqual(0);
             expect(getStage(2).length).toEqual(1);
-            expect(getStage(0)[0].innerHTML).toEqual("magenta");
-            expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-            expect(getStage(0)[2].innerHTML).toEqual("indigo");
-            expect(getStage(2)[0].innerHTML).toEqual("fuschia");
+            expect(getStage(0)[0].innerText).toEqual("magenta");
+            expect(getStage(0)[1].innerText).toEqual("turquoise");
+            expect(getStage(0)[2].innerText).toEqual("indigo");
+            expect(getStage(2)[0].innerText).toEqual("fuschia");
           });
 
           describe("after the item within Testing stage is clicked", () => {
             beforeEach(() => {
               const stage = getStage(2);
               expect(stage.length).toEqual(1);
-              stage[0].click();
+              stage[0].firstChild.click();
             });
 
             it("should have moved that item to the Testing stage", () => {
@@ -428,17 +443,17 @@ describe("AssemblyLineComponent", () => {
               expect(getStage(1).length).toEqual(0);
               expect(getStage(2).length).toEqual(0);
               expect(getStage(3).length).toEqual(1);
-              expect(getStage(0)[0].innerHTML).toEqual("magenta");
-              expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-              expect(getStage(0)[2].innerHTML).toEqual("indigo");
-              expect(getStage(3)[0].innerHTML).toEqual("fuschia");
+              expect(getStage(0)[0].innerText).toEqual("magenta");
+              expect(getStage(0)[1].innerText).toEqual("turquoise");
+              expect(getStage(0)[2].innerText).toEqual("indigo");
+              expect(getStage(3)[0].innerText).toEqual("fuschia");
             });
 
             describe("after the item within Deployment stage is clicked", () => {
               beforeEach(() => {
                 const stage = getStage(3);
                 expect(stage.length).toEqual(1);
-                stage[0].click();
+                stage[0].firstChild.click();
               });
 
               it("should have removed that item from the board", () => {
@@ -446,9 +461,9 @@ describe("AssemblyLineComponent", () => {
                 expect(getStage(1).length).toEqual(0);
                 expect(getStage(2).length).toEqual(0);
                 expect(getStage(3).length).toEqual(0);
-                expect(getStage(0)[0].innerHTML).toEqual("magenta");
-                expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-                expect(getStage(0)[2].innerHTML).toEqual("indigo");
+                expect(getStage(0)[0].innerText).toEqual("magenta");
+                expect(getStage(0)[1].innerText).toEqual("turquoise");
+                expect(getStage(0)[2].innerText).toEqual("indigo");
               });
             });
           });
@@ -459,17 +474,18 @@ describe("AssemblyLineComponent", () => {
         beforeEach(() => {
           const stage = getStage(0);
           expect(stage.length).toEqual(4);
-          stage[0].dispatchEvent(new MouseEvent("contextmenu"));
+          stage[0].firstChild.dispatchEvent(new MouseEvent("contextmenu"));
         });
 
         it("should have removed that item from the Idea stage", () => {
           expect(getStage(0).length).toEqual(3);
           expect(getStage(1).length).toEqual(0);
-          expect(getStage(0)[0].innerHTML).toEqual("magenta");
-          expect(getStage(0)[1].innerHTML).toEqual("turquoise");
-          expect(getStage(0)[2].innerHTML).toEqual("indigo");
+          expect(getStage(0)[0].innerText).toEqual("magenta");
+          expect(getStage(0)[1].innerText).toEqual("turquoise");
+          expect(getStage(0)[2].innerText).toEqual("indigo");
         });
       });
+
     });
   });
 });

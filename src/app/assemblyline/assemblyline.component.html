@@ -1,1 +1,14 @@
-TODO -- src/app/assemblyline/assemblyline.component.html
+  <div class= "input-section">
+    <label>Add an item:</label>
+    <input data-test="assembly-add-item" #inputData class="add-item" type="text"
+           (keydown.enter)="onEnterKeyPressed($event); inputData.value=''">
+  </div>
+  <div class="stages">
+    <div *ngFor="let stageItem of stages; let stageItemIndex = index" data-test="assembly-stage" class="stage-item">
+      {{stageItem}}
+      <div *ngFor="let listItem of listItems[stageItem]; let listItemIndex = index" data-test="assembly-item" >
+        <button class="btn-idea" (contextmenu)="onContextMenuClick($event, listItem, stageItem, stageItemIndex, listItemIndex)"
+                (click)="onLeftClick(listItem, stageItem, stageItemIndex, listItemIndex)">{{listItem}}</button>
+      </div>
+    </div>
+  </div>
